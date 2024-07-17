@@ -10,7 +10,7 @@ def load_image(image_file):
 def get_exif_dict(image):
     img_byte_arr = io.BytesIO()
     image.save(img_byte_arr, format='JPEG')
-    img_byte_arr = img_byte_arr.getvalue()
+    img_byte_arr.seek(0)
     
     exif_img = ExifImage(img_byte_arr)
     exif_dict = {tag: getattr(exif_img, tag, None) for tag in exif_img.list_all()}
@@ -34,32 +34,38 @@ if image_file:
     img = load_image(image_file)
     st.image(img, caption='Image téléchargée', use_column_width=True)
 
-    exif_dict, exif_img = get_exif_dict(img)
-
-    st.write("Métadonnées EXIF actuelles :")
-    st.json(exif_dict)
+    try:
+        exif_dict, exif_img = get_exif_dict(img)
+        if not exif_dict:
+            st.write("Aucune métadonnée EXIF trouvée.")
+        else:
+            st.write("Métadonnées EXIF actuelles :")
+            st.json(exif_dict)
+    except Exception as e:
+        st.error(f"Erreur lors de l'extraction des métadonnées EXIF: {e}")
 
     # Formulaire pour éditer les métadonnées
     st.header("Modifier les métadonnées EXIF")
 
     updated_exif_img = exif_img
 
-    for field, value in exif_dict.items():
-        new_value = st.text_input(f"{field}:", str(value))
-        if new_value and new_value != str(value):
-            try:
-                if isinstance(value, int):
-                    new_value = int(new_value)
-                elif isinstance(value, float):
-                    new_value = float(new_value)
-                updated_exif_img = update_exif(updated_exif_img, field, new_value)
-            except ValueError:
-                st.error(f"Valeur incorrecte pour {field}")
+    if exif_dict:
+        for field, value in exif_dict.items():
+            new_value = st.text_input(f"{field}:", str(value))
+            if new_value and new_value != str(value):
+                try:
+                    if isinstance(value, int):
+                        new_value = int(new_value)
+                    elif isinstance(value, float):
+                        new_value = float(new_value)
+                    updated_exif_img = update_exif(updated_exif_img, field, new_value)
+                except ValueError:
+                    st.error(f"Valeur incorrecte pour {field}")
 
     if st.button("Sauvegarder les modifications"):
         img_byte_arr = io.BytesIO()
         img.save(img_byte_arr, format='JPEG')
-        img_byte_arr = img_byte_arr.getvalue()
+        img_byte_arr.seek(0)
         
         with open("edited_image.jpg", "wb") as edited_image_file:
             edited_image_file.write(updated_exif_img.get_file())
