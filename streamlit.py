@@ -29,6 +29,31 @@ def update_exif(exif_dict, field, value):
         exif_dict["Interop"][field] = value
     return exif_dict
 
+def to_deg(value, loc):
+    """Convert decimal coordinates into degrees, minutes, and seconds."""
+    if value < 0:
+        loc_value = loc[0]
+        value = -value
+    else:
+        loc_value = loc[1]
+
+    deg = int(value)
+    t1 = (value - deg) * 60
+    min = int(t1)
+    sec = round((t1 - min) * 60 * 10000)
+
+    return (deg, min, sec), loc_value
+
+def set_gps_location(exif_dict, lat, lon):
+    """Add GPS information to exif data."""
+    lat_deg, lat_ref = to_deg(lat, ['S', 'N'])
+    lon_deg, lon_ref = to_deg(lon, ['W', 'E'])
+
+    exif_dict['GPS'][piexif.GPSIFD.GPSLatitudeRef] = lat_ref
+    exif_dict['GPS'][piexif.GPSIFD.GPSLatitude] = [lat_deg[0], lat_deg[1], lat_deg[2]]
+    exif_dict['GPS'][piexif.GPSIFD.GPSLongitudeRef] = lon_ref
+    exif_dict['GPS'][piexif.GPSIFD.GPSLongitude] = [lon_deg[0], lon_deg[1], lon_deg[2]]
+
 st.title("Éditeur de métadonnées EXIF")
 
 # Téléchargement de l'image
@@ -66,13 +91,19 @@ if image_file:
                         new_value = new_value.encode()
                     updated_exif_dict[ifd_name][tag] = new_value
 
+    # Champs pour les coordonnées GPS
+    st.subheader("Ajouter/modifier la position GPS")
+    lat = st.number_input("Latitude", format="%.6f")
+    lon = st.number_input("Longitude", format="%.6f")
+
     if st.button("Sauvegarder les modifications"):
+        set_gps_location(updated_exif_dict, lat, lon)
         exif_bytes = exif_dict_to_bytes(updated_exif_dict)
-        img.save("edited_pic.jpg", exif=exif_bytes)
-        st.success("Métadonnées mises à jour et image enregistrée sous 'edited_pic.jpg'")
+        img.save("edited_image.jpg", exif=exif_bytes)
+        st.success("Métadonnées mises à jour et image enregistrée sous 'edited_image.jpg'")
 
         # Afficher le lien pour télécharger l'image éditée
-        with open("edited_pic.jpg", "rb") as file:
+        with open("edited_image.jpg", "rb") as file:
             btn = st.download_button(
                 label="Télécharger l'image modifiée",
                 data=file,
