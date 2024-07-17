@@ -76,24 +76,26 @@ if image_file:
 
     updated_exif_dict = exif_dict.copy()
 
-    for ifd_name, tags in tag_fields.items():
-        st.subheader(ifd_name)
-        for tag, desc in tags.items():
-            if tag in exif_dict[ifd_name]:
-                value = exif_dict[ifd_name][tag]
-                new_value = st.text_input(f"{desc['name']} ({ifd_name}):", str(value))
-                if new_value:
-                    if isinstance(value, bytes):
-                        new_value = new_value.encode()
-                    else:
-                        try:
-                            if isinstance(value, int):
-                                new_value = int(new_value)
-                            elif isinstance(value, float):
-                                new_value = float(new_value)
-                        except ValueError:
-                            pass
-                    updated_exif_dict[ifd_name][tag] = new_value
+for ifd_name, tags in tag_fields.items():
+    st.subheader(ifd_name)
+    for tag, desc in tags.items():
+        if tag in exif_dict[ifd_name]:
+            value = exif_dict[ifd_name][tag]
+            new_value = ""  # Initialize new_value with an empty string
+            new_value = st.text_input(f"{desc['name']} ({ifd_name}):", str(value))
+            if new_value:
+                if isinstance(value, bytes):
+                    new_value = new_value.encode()
+                else:
+                    try:
+                        if isinstance(value, int):
+                            new_value = int(new_value)
+                        elif isinstance(value, float):
+                            new_value = float(new_value)
+                    except ValueError:
+                        pass
+                updated_exif_dict[ifd_name][tag] = new_value
+
 
     st.subheader("Add/Modify GPS Location")
     lat = st.number_input("Latitude", format="%.6f")
