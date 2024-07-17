@@ -1,6 +1,6 @@
 import streamlit as st
 from PIL import Image
-from exif import Image as ExifImage
+import exifread
 import io
 
 def load_image(image_file):
@@ -8,22 +8,37 @@ def load_image(image_file):
     return img
 
 def get_exif_dict(image):
-    img_byte_arr = io.BytesIO()
-    image.save(img_byte_arr, format='JPEG')
-    img_byte_arr.seek(0)
-    
-    exif_img = ExifImage(img_byte_arr)
-    exif_dict = {tag: getattr(exif_img, tag, None) for tag in exif_img.list_all()}
-    return exif_dict, exif_img
-
-def update_exif(exif_img, field, value):
+    exif_dict = {}
     try:
-        if isinstance(getattr(exif_img, field, None), bytes):
-            value = value.encode()
-        setattr(exif_img, field, value)
+        img_byte_arr = io.BytesIO()
+        image.save(img_byte_arr, format='JPEG')
+        img_byte_arr.seek(0)
+        
+        tags = exifread.process_file(img_byte_arr)
+        for tag in tags.keys():
+            if tag not in ('JPEGThumbnail', 'TIFFThumbnail', 'Filename', 'EXIF MakerNote'):
+                exif_dict[tag] = tags[tag]
     except Exception as e:
-        st.error(f"Erreur lors de la mise à jour de {field}: {e}")
-    return exif_img
+        st.error(f"Erreur lors de l'extraction des métadonnées EXIF: {e}")
+    
+    return exif_dict
+
+def update_exif(image, exif_dict):
+    try:
+        img_byte_arr = io.BytesIO()
+        image.save(img_byte_arr, format='JPEG')
+        img_byte_arr.seek(0)
+        
+        exif_bytes = exifread.makernote.remove_maker_notes(img_byte_arr.getvalue())
+        
+        for tag, value in exif_dict.items():
+            if tag in exif_bytes:
+                exif_bytes[tag] = exifread.classes.IfdTag(tag, value)
+        
+        return exif_bytes
+    except Exception as e:
+        st.error(f"Erreur lors de la mise à jour des métadonnées EXIF: {e}")
+        return None
 
 st.title("Éditeur de métadonnées EXIF")
 
@@ -34,50 +49,35 @@ if image_file:
     img = load_image(image_file)
     st.image(img, caption='Image téléchargée', use_column_width=True)
 
-    try:
-        exif_dict, exif_img = get_exif_dict(img)
-        if not exif_dict:
-            st.write("Aucune métadonnée EXIF trouvée.")
-        else:
-            st.write("Métadonnées EXIF actuelles :")
-            st.json(exif_dict)
-    except Exception as e:
-        st.error(f"Erreur lors de l'extraction des métadonnées EXIF: {e}")
+    exif_dict = get_exif_dict(img)
+
+    st.write("Métadonnées EXIF actuelles :")
+    st.json(exif_dict)
 
     # Formulaire pour éditer les métadonnées
     st.header("Modifier les métadonnées EXIF")
 
-    updated_exif_img = exif_img
+    updated_exif_dict = exif_dict.copy()
 
-    if exif_dict:
-        for field, value in exif_dict.items():
-            new_value = st.text_input(f"{field}:", str(value))
-            if new_value and new_value != str(value):
-                try:
-                    if isinstance(value, int):
-                        new_value = int(new_value)
-                    elif isinstance(value, float):
-                        new_value = float(new_value)
-                    updated_exif_img = update_exif(updated_exif_img, field, new_value)
-                except ValueError:
-                    st.error(f"Valeur incorrecte pour {field}")
+    for tag, value in exif_dict.items():
+        new_value = st.text_input(f"{tag}:", str(value))
+        if new_value != str(value):
+            updated_exif_dict[tag] = new_value
 
     if st.button("Sauvegarder les modifications"):
-        img_byte_arr = io.BytesIO()
-        img.save(img_byte_arr, format='JPEG')
-        img_byte_arr.seek(0)
-        
-        with open("edited_image.jpg", "wb") as edited_image_file:
-            edited_image_file.write(updated_exif_img.get_file())
+        updated_exif_bytes = update_exif(img, updated_exif_dict)
+        if updated_exif_bytes:
+            with open("edited_image.jpg", "wb") as edited_image_file:
+                edited_image_file.write(updated_exif_bytes)
+            st.success("Métadonnées mises à jour et image enregistrée sous 'edited_image.jpg'")
 
-        st.success("Métadonnées mises à jour et image enregistrée sous 'edited_image.jpg'")
+            # Afficher le lien pour télécharger l'image éditée
+            with open("edited_image.jpg", "rb") as file:
+                btn = st.download_button(
+                    label="Télécharger l'image modifiée",
+                    data=file,
+                    file_name="edited_image.jpg",
+                    mime="image/jpeg"
+                )
 
-        # Afficher le lien pour télécharger l'image éditée
-        with open("edited_image.jpg", "rb") as file:
-            btn = st.download_button(
-                label="Télécharger l'image modifiée",
-                data=file,
-                file_name="edited_image.jpg",
-                mime="image/jpeg"
-            )
 
