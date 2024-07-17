@@ -81,7 +81,6 @@ if image_file:
         for tag, desc in tags.items():
             if tag in exif_dict[ifd_name]:
                 value = exif_dict[ifd_name][tag]
-                new_value = ""  # Initialize new_value with an empty string
                 new_value = st.text_input(f"{desc['name']} ({ifd_name}):", str(value))
                 if new_value:
                     if isinstance(value, bytes):
@@ -96,22 +95,22 @@ if image_file:
                             pass
                     updated_exif_dict[ifd_name][tag] = new_value
 
+    st.subheader("Add/Modify GPS Location")
+    lat = st.number_input("Latitude", format="%.6f")
+    lon = st.number_input("Longitude", format="%.6f")
 
-        st.subheader("Add/Modify GPS Location")
-        lat = st.number_input("Latitude", format="%.6f")
-        lon = st.number_input("Longitude", format="%.6f")
+    if st.button("Save Changes"):
+        set_gps_location(updated_exif_dict, lat, lon)
+        exif_bytes = exif_dict_to_bytes(updated_exif_dict)
+        img.save("edited_image.jpg", exif=exif_bytes)
+        st.success("Metadata updated and image saved as 'edited_image.jpg'")
 
-        if st.button("Save Changes"):
-            set_gps_location(updated_exif_dict, lat, lon)
-            exif_bytes = exif_dict_to_bytes(updated_exif_dict)
-            img.save("edited_image.jpg", exif=exif_bytes)
-            st.success("Metadata updated and image saved as 'edited_image.jpg'")
+        with open("edited_image.jpg", "rb") as file:
+            btn = st.download_button(
+                label="Download Edited Image",
+                data=file,
+                file_name="edited_image.jpg",
+                mime="image/jpeg"
+            )
 
-            with open("edited_image.jpg", "rb") as file:
-                btn = st.download_button(
-                    label="Download Edited Image",
-                    data=file,
-                    file_name="edited_image.jpg",
-                    mime="image/jpeg"
-                )
 
