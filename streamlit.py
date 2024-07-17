@@ -50,9 +50,9 @@ def set_gps_location(exif_dict, lat, lon):
     lon_deg, lon_ref = to_deg(lon, ['W', 'E'])
 
     exif_dict['GPS'][piexif.GPSIFD.GPSLatitudeRef] = lat_ref
-    exif_dict['GPS'][piexif.GPSIFD.GPSLatitude] = [(lat_deg[0], 1), (lat_deg[1], 1), (lat_deg[2], 10000)]
+    exif_dict['GPS'][piexif.GPSIFD.GPSLatitude] = [(int(lat_deg[0]), 1), (int(lat_deg[1]), 1), (int(lat_deg[2]), 10000)]
     exif_dict['GPS'][piexif.GPSIFD.GPSLongitudeRef] = lon_ref
-    exif_dict['GPS'][piexif.GPSIFD.GPSLongitude] = [(lon_deg[0], 1), (lon_deg[1], 1), (lon_deg[2], 10000)]
+    exif_dict['GPS'][piexif.GPSIFD.GPSLongitude] = [(int(lon_deg[0]), 1), (int(lon_deg[1]), 1), (int(lon_deg[2]), 10000)]
 
 st.title("Éditeur de métadonnées EXIF")
 
@@ -110,3 +110,4 @@ if image_file:
                 file_name="edited_image.jpg",
                 mime="image/jpeg"
             )
+
