@@ -14,11 +14,15 @@ def get_exif_dict(image):
     
     exif_img = ExifImage(img_byte_arr)
     exif_dict = {tag: getattr(exif_img, tag, None) for tag in exif_img.list_all()}
-
     return exif_dict, exif_img
 
 def update_exif(exif_img, field, value):
-    setattr(exif_img, field, value)
+    try:
+        if isinstance(getattr(exif_img, field, None), bytes):
+            value = value.encode()
+        setattr(exif_img, field, value)
+    except Exception as e:
+        st.error(f"Erreur lors de la mise à jour de {field}: {e}")
     return exif_img
 
 st.title("Éditeur de métadonnées EXIF")
@@ -42,17 +46,15 @@ if image_file:
 
     for field, value in exif_dict.items():
         new_value = st.text_input(f"{field}:", str(value))
-        if new_value:
+        if new_value and new_value != str(value):
             try:
                 if isinstance(value, int):
                     new_value = int(new_value)
                 elif isinstance(value, float):
                     new_value = float(new_value)
-                elif isinstance(value, bytes):
-                    new_value = new_value.encode()
+                updated_exif_img = update_exif(updated_exif_img, field, new_value)
             except ValueError:
-                pass
-            updated_exif_img = update_exif(updated_exif_img, field, new_value)
+                st.error(f"Valeur incorrecte pour {field}")
 
     if st.button("Sauvegarder les modifications"):
         img_byte_arr = io.BytesIO()
