@@ -49,58 +49,12 @@ def set_gps_location(exif_dict, lat, lon):
     lat_deg, lat_ref = to_deg(lat, ['S', 'N'])
     lon_deg, lon_ref = to_deg(lon, ['W', 'E'])
 
-    exif_dict['GPS'][piexif.GPSIFD.GPSLatitudeRef] = lat_ref
+    exif_dict['GPS'][piexif.GPSIFD.GPSLatitudeRef] = lat_ref.encode()
     exif_dict['GPS'][piexif.GPSIFD.GPSLatitude] = [(int(lat_deg[0]), 1), (int(lat_deg[1]), 1), (int(lat_deg[2]), 10000)]
-    exif_dict['GPS'][piexif.GPSIFD.GPSLongitudeRef] = lon_ref
+    exif_dict['GPS'][piexif.GPSIFD.GPSLongitudeRef] = lon_ref.encode()
     exif_dict['GPS'][piexif.GPSIFD.GPSLongitude] = [(int(lon_deg[0]), 1), (int(lon_deg[1]), 1), (int(lon_deg[2]), 10000)]
 
-st.title("Éditeur de métadonnées EXIF")
-
-# Téléchargement de l'image
-image_file = st.file_uploader("Téléchargez une image", type=["jpg", "jpeg"])
-
-if image_file:
-    img = load_image(image_file)
-    st.image(img, caption='Image téléchargée', use_column_width=True)
-
-    exif_dict = get_exif_dict(img)
-
-    st.write("Métadonnées EXIF actuelles :")
-    st.json(exif_dict)
-
-    # Formulaire pour éditer les métadonnées
-    st.header("Modifier les métadonnées EXIF")
-
-    tag_fields = {
-        "0th": piexif.TAGS["0th"],
-        "Exif": piexif.TAGS["Exif"],
-        "GPS": piexif.TAGS["GPS"],
-        "Interop": piexif.TAGS["Interop"],
-    }
-
-    updated_exif_dict = exif_dict.copy()
-
-    for ifd_name, tags in tag_fields.items():
-        st.subheader(ifd_name)
-        for tag, desc in tags.items():
-            if tag in exif_dict[ifd_name]:
-                value = exif_dict[ifd_name][tag]
-                new_value = st.text_input(f"{desc['name']} ({ifd_name}):", str(value))
-                if new_value:
-                    if isinstance(value, bytes):
-                        new_value = new_value.encode()
-                    updated_exif_dict[ifd_name][tag] = new_value
-
-    # Champs pour les coordonnées GPS
-    st.subheader("Ajouter/modifier la position GPS")
-    lat = st.number_input("Latitude", format="%.6f")
-    lon = st.number_input("Longitude", format="%.6f")
-
-    if st.button("Sauvegarder les modifications"):
-        set_gps_location(updated_exif_dict, lat, lon)
-        exif_bytes = exif_dict_to_bytes(updated_exif_dict)
-        img.save("edited_image.jpg", exif=exif_bytes)
-        st.success("Métadonnées mises à jour et image enregistrée sous 'edited_image.jpg'")
+    return exif_dict
 
         # Afficher le lien pour télécharger l'image éditée
         with open("edited_image.jpg", "rb") as file:
