@@ -1,6 +1,5 @@
 import streamlit as st
 from PIL import Image
-import io
 
 def load_image(image_file):
     img = Image.open(image_file)
@@ -8,26 +7,26 @@ def load_image(image_file):
 
 def get_exif_dict(image):
     try:
-        exif_data = image._getexif()
+        exif_data = image.getexif()
         if exif_data:
             exif_dict = {Image.TAGS.get(tag, tag): value for tag, value in exif_data.items()}
         else:
             exif_dict = {}
     except Exception as e:
-        st.error(f"Erreur lors de l'extraction des métadonnées EXIF: {e}")
+        st.error(f"Erreur lors de l'extraction des métadonnées EXIF : {e}")
         exif_dict = {}
     
     return exif_dict
 
 def update_exif(image, exif_dict):
     try:
-        exif_data = {Image.TAGS.get(tag, tag): value for tag, value in exif_dict.items()}
+        exif_data = {tag: value for tag, value in exif_dict.items()}
         image.save("edited_image.jpg", exif=exif_data)
         st.success("Métadonnées mises à jour et image enregistrée sous 'edited_image.jpg'")
         
         return True
     except Exception as e:
-        st.error(f"Erreur lors de la mise à jour des métadonnées EXIF: {e}")
+        st.error(f"Erreur lors de la mise à jour des métadonnées EXIF : {e}")
         return False
 
 st.title("Éditeur de métadonnées EXIF")
@@ -64,5 +63,4 @@ if image_file:
                     file_name="edited_image.jpg",
                     mime="image/jpeg"
                 )
-
 
