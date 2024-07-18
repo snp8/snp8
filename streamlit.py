@@ -30,7 +30,7 @@ def create_gps_ifd(latitude, longitude):
     return gps_ifd
 
 # on charge l'image
-image_path = '/pic.JPG'
+image_path = '../pic.JPG'
 image = Image.open(image_path)
 st.image(image, caption='Image originale')
 
@@ -64,7 +64,7 @@ with st.form('modify_location'):
         exif_bytes = piexif.dump(exif_dict)
         
         # on sauvegarde l'image éditée avec les nouvelles données GPS
-        modified_image_path = '/modified_pic.JPG'
+        modified_image_path = '../modified_pic.JPG'
         image.save(modified_image_path, exif=exif_bytes)
         
         st.success('Image modifiée avec succès ! Une copie a été téléchargée sur votre machine.')
