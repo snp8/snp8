@@ -79,7 +79,7 @@ with st.form('modify_location'):
         st_folium(m, width=700, height=500)
 
 st.write("\n")
-st.subheader("Les capitales européennes que j'ai visité.")
+st.subheader("Les capitales européennes que j'ai visitées.")
 # on définit les coordonnées 
 locations = [
     (50.8466, 4.3528, 'Brussels, Belgium'),
