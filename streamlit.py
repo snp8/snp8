@@ -30,7 +30,7 @@ def create_gps_ifd(latitude, longitude):
     return gps_ifd
 
 # on charge l'image
-image_path = 'pic.JPG'
+image_path = 'https://github.com/snp8/snp8/blob/main/pic.JPG'
 image = Image.open(image_path)
 st.image(image, caption='Image originale')
 
